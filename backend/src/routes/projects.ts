@@ -25,7 +25,10 @@ projectsRouter.get("/", requireAuth, async (req, res) => {
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
-  if (ownError) return void res.status(500).json({ detail: ownError.message });
+  if (ownError) {
+    console.error("GET /projects ownProjects error:", JSON.stringify(ownError));
+    return void res.status(500).json({ detail: ownError.message, code: ownError.code, details: ownError.details, hint: ownError.hint });
+  }
 
   const { data: sharedProjects, error: sharedError } = userEmail
     ? await db
@@ -35,8 +38,10 @@ projectsRouter.get("/", requireAuth, async (req, res) => {
         .neq("user_id", userId)
         .order("created_at", { ascending: false })
     : { data: [], error: null };
-  if (sharedError)
-    return void res.status(500).json({ detail: sharedError.message });
+  if (sharedError) {
+    console.error("GET /projects sharedProjects error:", JSON.stringify(sharedError), "userEmail:", userEmail);
+    return void res.status(500).json({ detail: sharedError.message, code: sharedError.code, details: sharedError.details, hint: sharedError.hint });
+  }
 
   const projects = [...(ownProjects ?? []), ...(sharedProjects ?? [])].sort(
     (a, b) =>
